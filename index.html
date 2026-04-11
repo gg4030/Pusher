@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GymFlow Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header card">
+        <h1>GymFlow Tracker</h1>
+        <p>Log exercises, track progress, and plan your next training day.</p>
+      </header>
+
+      <main class="main-layout">
+        <aside class="body-part-panel card">
+          <h2>Body Parts</h2>
+          <ul id="bodyPartList" class="body-part-list"></ul>
+        </aside>
+
+        <section class="exercise-panel card">
+          <div class="section-title-row">
+            <h2 id="exercisePanelTitle">Chest Exercises</h2>
+          </div>
+
+          <div id="exerciseList" class="exercise-list"></div>
+
+          <form id="exerciseForm" class="add-exercise-form">
+            <h3>Add Exercise</h3>
+            <div class="form-grid">
+              <label>
+                Exercise Name
+                <input
+                  id="exerciseName"
+                  type="text"
+                  placeholder="e.g., Bench Press"
+                  required
+                />
+              </label>
+
+              <label>
+                Weight
+                <input id="exerciseWeight" type="number" min="0" step="0.5" required />
+              </label>
+
+              <label>
+                Reps
+                <input id="exerciseReps" type="number" min="1" step="1" required />
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Exercise</button>
+          </form>
+        </section>
+      </main>
+
+      <section class="calendar-panel card">
+        <div class="calendar-header">
+          <h2>Workout Calendar</h2>
+          <div class="calendar-nav">
+            <button id="prevMonthBtn" class="btn btn-secondary" type="button" aria-label="Previous month">
+              &#8592;
+            </button>
+            <h3 id="calendarMonthLabel"></h3>
+            <button id="nextMonthBtn" class="btn btn-secondary" type="button" aria-label="Next month">
+              &#8594;
+            </button>
+          </div>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </section>
+    </div>
+
+    <div id="exerciseEditModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <div class="modal-content">
+        <h3 id="editTitle">Update Exercise</h3>
+        <form id="editExerciseForm" class="modal-form">
+          <p id="editExerciseName" class="modal-exercise-name"></p>
+          <label>
+            Weight
+            <input id="editWeight" type="number" min="0" step="0.5" required />
+          </label>
+          <label>
+            Reps
+            <input id="editReps" type="number" min="1" step="1" required />
+          </label>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" type="button" data-close-modal="exerciseEditModal">Cancel</button>
+            <button class="btn btn-primary" type="submit">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="calendarLogModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="calendarLogTitle">
+      <div class="modal-content">
+        <h3 id="calendarLogTitle">Log Workout</h3>
+        <form id="calendarLogForm" class="modal-form">
+          <p id="calendarLogDateLabel" class="modal-exercise-name"></p>
+          <label>
+            Body Part Trained
+            <select id="calendarBodyPartSelect" required></select>
+          </label>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" type="button" data-close-modal="calendarLogModal">Cancel</button>
+            <button class="btn btn-secondary" type="button" id="clearCalendarDayBtn">Clear Day</button>
+            <button class="btn btn-primary" type="submit">Save Day</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
