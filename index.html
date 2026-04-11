@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GymFlow Tracker</title>
+    <title>Pusher</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,7 +15,7 @@
   <body>
     <div class="app-shell">
       <header class="app-header card">
-        <h1>GymFlow Tracker</h1>
+        <h1>Pusher</h1>
         <p>Log exercises, track progress, and plan your next training day.</p>
       </header>
 
@@ -46,8 +46,13 @@
               </label>
 
               <label>
-                Weight
-                <input id="exerciseWeight" type="number" min="0" step="0.5" required />
+                Weight (kg)
+                <input id="exerciseWeightKg" type="number" min="0" step="0.1" required />
+              </label>
+
+              <label>
+                Weight (lb)
+                <input id="exerciseWeightLb" type="number" min="0" step="0.1" required />
               </label>
 
               <label>
@@ -83,8 +88,12 @@
         <form id="editExerciseForm" class="modal-form">
           <p id="editExerciseName" class="modal-exercise-name"></p>
           <label>
-            Weight
-            <input id="editWeight" type="number" min="0" step="0.5" required />
+            Weight (kg)
+            <input id="editWeightKg" type="number" min="0" step="0.1" required />
+          </label>
+          <label>
+            Weight (lb)
+            <input id="editWeightLb" type="number" min="0" step="0.1" required />
           </label>
           <label>
             Reps
@@ -104,8 +113,13 @@
         <form id="calendarLogForm" class="modal-form">
           <p id="calendarLogDateLabel" class="modal-exercise-name"></p>
           <label>
-            Body Part Trained
-            <select id="calendarBodyPartSelect" required></select>
+            Body Parts Trained
+            <div id="calendarBodyPartOptions" class="checkbox-grid"></div>
+          </label>
+          <label>
+            Workout Rating (1-5)
+            <input id="calendarWorkoutRating" type="range" min="1" max="5" step="1" value="3" />
+            <span id="calendarWorkoutRatingLabel" class="rating-label">3 / 5</span>
           </label>
           <div class="modal-actions">
             <button class="btn btn-secondary" type="button" data-close-modal="calendarLogModal">Cancel</button>

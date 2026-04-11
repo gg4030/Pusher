@@ -10,6 +10,11 @@ const BODY_PARTS = [
 ];
 
 const STORAGE_KEYS = {
+  exercises: "pusher_exercises",
+  calendar: "pusher_calendar_logs",
+};
+
+const LEGACY_STORAGE_KEYS = {
   exercises: "gymflow_exercises",
   calendar: "gymflow_calendar_logs",
 };
@@ -29,13 +34,15 @@ const exercisePanelTitleEl = document.getElementById("exercisePanelTitle");
 const exerciseListEl = document.getElementById("exerciseList");
 const exerciseFormEl = document.getElementById("exerciseForm");
 const exerciseNameInputEl = document.getElementById("exerciseName");
-const exerciseWeightInputEl = document.getElementById("exerciseWeight");
+const exerciseWeightKgInputEl = document.getElementById("exerciseWeightKg");
+const exerciseWeightLbInputEl = document.getElementById("exerciseWeightLb");
 const exerciseRepsInputEl = document.getElementById("exerciseReps");
 
 const editModalEl = document.getElementById("exerciseEditModal");
 const editExerciseFormEl = document.getElementById("editExerciseForm");
 const editExerciseNameEl = document.getElementById("editExerciseName");
-const editWeightInputEl = document.getElementById("editWeight");
+const editWeightKgInputEl = document.getElementById("editWeightKg");
+const editWeightLbInputEl = document.getElementById("editWeightLb");
 const editRepsInputEl = document.getElementById("editReps");
 
 const calendarGridEl = document.getElementById("calendarGrid");
@@ -45,7 +52,9 @@ const nextMonthBtnEl = document.getElementById("nextMonthBtn");
 
 const calendarLogModalEl = document.getElementById("calendarLogModal");
 const calendarLogFormEl = document.getElementById("calendarLogForm");
-const calendarBodyPartSelectEl = document.getElementById("calendarBodyPartSelect");
+const calendarBodyPartOptionsEl = document.getElementById("calendarBodyPartOptions");
+const calendarWorkoutRatingEl = document.getElementById("calendarWorkoutRating");
+const calendarWorkoutRatingLabelEl = document.getElementById("calendarWorkoutRatingLabel");
 const calendarLogDateLabelEl = document.getElementById("calendarLogDateLabel");
 const clearCalendarDayBtnEl = document.getElementById("clearCalendarDayBtn");
 
@@ -70,10 +79,66 @@ function generateExerciseId() {
   return `ex_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function normalizeExercise(item) {
+  if (!item || typeof item !== "object") {
+    return {
+      id: generateExerciseId(),
+      name: "",
+      reps: 0,
+      weightKg: 0,
+      weightLb: 0,
+      lastUpdated: todayDateString(),
+    };
+  }
+
+  const legacyWeight = Number(item.weight);
+  const weightKg = Number(item.weightKg);
+  const weightLb = Number(item.weightLb);
+
+  return {
+    id: item.id || generateExerciseId(),
+    name: String(item.name || ""),
+    reps: Number(item.reps) || 0,
+    weightKg: Number.isFinite(weightKg) ? weightKg : Number.isFinite(legacyWeight) ? legacyWeight : 0,
+    weightLb: Number.isFinite(weightLb) ? weightLb : 0,
+    lastUpdated: item.lastUpdated || todayDateString(),
+  };
+}
+
+function normalizeCalendarEntry(entryValue) {
+  if (typeof entryValue === "string") {
+    return {
+      bodyParts: BODY_PARTS.includes(entryValue) ? [entryValue] : [],
+      rating: 3,
+    };
+  }
+
+  if (entryValue && typeof entryValue === "object") {
+    const rawParts = Array.isArray(entryValue.bodyParts)
+      ? entryValue.bodyParts
+      : typeof entryValue.bodyPart === "string"
+        ? [entryValue.bodyPart]
+        : [];
+    const bodyParts = rawParts.filter((part) => BODY_PARTS.includes(part));
+    const parsedRating = Number(entryValue.rating);
+    return {
+      bodyParts,
+      rating: Math.min(5, Math.max(1, Number.isFinite(parsedRating) ? parsedRating : 3)),
+    };
+  }
+
+  return {
+    bodyParts: [],
+    rating: 3,
+  };
+}
+
 function loadStorage() {
   try {
-    const exercisesRaw = localStorage.getItem(STORAGE_KEYS.exercises);
-    const calendarRaw = localStorage.getItem(STORAGE_KEYS.calendar);
+    const exercisesRaw =
+      localStorage.getItem(STORAGE_KEYS.exercises) || localStorage.getItem(LEGACY_STORAGE_KEYS.exercises);
+    const calendarRaw =
+      localStorage.getItem(STORAGE_KEYS.calendar) || localStorage.getItem(LEGACY_STORAGE_KEYS.calendar);
 
     appState.exercisesByBodyPart = exercisesRaw ? JSON.parse(exercisesRaw) : {};
     appState.calendarLogs = calendarRaw ? JSON.parse(calendarRaw) : {};
@@ -86,7 +151,12 @@ function loadStorage() {
     if (!Array.isArray(appState.exercisesByBodyPart[part])) {
       appState.exercisesByBodyPart[part] = [];
     }
+    appState.exercisesByBodyPart[part] = appState.exercisesByBodyPart[part].map(normalizeExercise);
   }
+
+  Object.keys(appState.calendarLogs).forEach((dateKey) => {
+    appState.calendarLogs[dateKey] = normalizeCalendarEntry(appState.calendarLogs[dateKey]);
+  });
 }
 
 function saveExercises() {
@@ -145,7 +215,8 @@ function renderExercises() {
     const meta = document.createElement("div");
     meta.className = "exercise-meta";
     meta.innerHTML = `
-      <span class="badge">Weight: ${exercise.weight}</span>
+      <span class="badge">Weight: ${exercise.weightKg} kg</span>
+      <span class="badge">Weight: ${exercise.weightLb} lb</span>
       <span class="badge">Reps: ${exercise.reps}</span>
       <span class="badge">Last Updated: ${toHumanDate(exercise.lastUpdated)}</span>
     `;
@@ -166,17 +237,27 @@ function addExercise(event) {
   event.preventDefault();
 
   const name = exerciseNameInputEl.value.trim();
-  const weight = Number(exerciseWeightInputEl.value);
+  const weightKg = Number(exerciseWeightKgInputEl.value);
+  const weightLb = Number(exerciseWeightLbInputEl.value);
   const reps = Number(exerciseRepsInputEl.value);
 
-  if (!name || Number.isNaN(weight) || Number.isNaN(reps)) {
+  if (
+    !name ||
+    Number.isNaN(weightKg) ||
+    Number.isNaN(weightLb) ||
+    Number.isNaN(reps) ||
+    reps < 1 ||
+    weightKg < 0 ||
+    weightLb < 0
+  ) {
     return;
   }
 
   appState.exercisesByBodyPart[appState.selectedBodyPart].push({
     id: generateExerciseId(),
     name,
-    weight,
+    weightKg,
+    weightLb,
     reps,
     lastUpdated: todayDateString(),
   });
@@ -195,8 +276,9 @@ function openExerciseEditModal(bodyPart, exerciseId) {
 
   appState.editContext = { bodyPart, exerciseId };
   editExerciseNameEl.textContent = exercise.name;
-  editWeightInputEl.value = exercise.weight;
-  editRepsInputEl.value = exercise.reps;
+  editWeightKgInputEl.value = String(exercise.weightKg);
+  editWeightLbInputEl.value = String(exercise.weightLb);
+  editRepsInputEl.value = String(exercise.reps);
   openModal(editModalEl);
 }
 
@@ -206,9 +288,17 @@ function updateExercise(event) {
     return;
   }
 
-  const newWeight = Number(editWeightInputEl.value);
+  const newWeightKg = Number(editWeightKgInputEl.value);
+  const newWeightLb = Number(editWeightLbInputEl.value);
   const newReps = Number(editRepsInputEl.value);
-  if (Number.isNaN(newWeight) || Number.isNaN(newReps)) {
+  if (
+    Number.isNaN(newWeightKg) ||
+    Number.isNaN(newWeightLb) ||
+    Number.isNaN(newReps) ||
+    newReps < 1 ||
+    newWeightKg < 0 ||
+    newWeightLb < 0
+  ) {
     return;
   }
 
@@ -219,13 +309,20 @@ function updateExercise(event) {
     return;
   }
 
-  exercise.weight = newWeight;
+  exercise.weightKg = newWeightKg;
+  exercise.weightLb = newWeightLb;
   exercise.reps = newReps;
   exercise.lastUpdated = todayDateString();
 
   saveExercises();
   renderExercises();
   closeModal(editModalEl);
+}
+
+function getDateKeyFromDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate()
+  ).padStart(2, "0")}`;
 }
 
 function renderCalendar() {
@@ -260,13 +357,11 @@ function renderCalendar() {
 
     if (cellIndex < startDayOfWeek) {
       dayNumber = prevMonthDays - startDayOfWeek + cellIndex + 1;
-      const date = new Date(appState.viewYear, appState.viewMonth - 1, dayNumber);
-      cellDate = date;
+      cellDate = new Date(appState.viewYear, appState.viewMonth - 1, dayNumber);
       outsideMonth = true;
     } else if (cellIndex >= startDayOfWeek + daysInMonth) {
       dayNumber = cellIndex - startDayOfWeek - daysInMonth + 1;
-      const date = new Date(appState.viewYear, appState.viewMonth + 1, dayNumber);
-      cellDate = date;
+      cellDate = new Date(appState.viewYear, appState.viewMonth + 1, dayNumber);
       outsideMonth = true;
     } else {
       dayNumber = cellIndex - startDayOfWeek + 1;
@@ -277,24 +372,28 @@ function renderCalendar() {
       dayButton.classList.add("is-outside-month");
     }
 
-    const dateKey = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${String(cellDate.getDate()).padStart(2, "0")}`;
+    const dateKey = getDateKeyFromDate(cellDate);
 
     const numberEl = document.createElement("div");
     numberEl.className = "calendar-day-number";
     numberEl.textContent = String(dayNumber);
     dayButton.append(numberEl);
 
-    if (appState.calendarLogs[dateKey]) {
+    const calendarEntry = appState.calendarLogs[dateKey];
+    if (calendarEntry && calendarEntry.bodyParts.length) {
       dayButton.classList.add("logged");
-      dayButton.title = appState.calendarLogs[dateKey];
+      const bodyPartsLabel = calendarEntry.bodyParts.join(", ");
+      dayButton.title = `${bodyPartsLabel} | Rating: ${calendarEntry.rating}/5`;
 
       const label = document.createElement("div");
       label.className = "calendar-day-label";
-      label.textContent = appState.calendarLogs[dateKey];
+      label.textContent = bodyPartsLabel;
       dayButton.append(label);
+
+      const ratingLabel = document.createElement("div");
+      ratingLabel.className = "calendar-day-rating";
+      ratingLabel.textContent = `Rating ${calendarEntry.rating}/5`;
+      dayButton.append(ratingLabel);
     }
 
     dayButton.addEventListener("click", () => openCalendarLogModal(dateKey));
@@ -302,20 +401,50 @@ function renderCalendar() {
   }
 }
 
-function populateCalendarBodyPartOptions() {
-  calendarBodyPartSelectEl.innerHTML = "";
+function createCalendarBodyPartCheckboxes() {
+  calendarBodyPartOptionsEl.innerHTML = "";
   BODY_PARTS.forEach((part) => {
-    const option = document.createElement("option");
-    option.value = part;
-    option.textContent = part;
-    calendarBodyPartSelectEl.append(option);
+    const label = document.createElement("label");
+    label.className = "checkbox-item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = part;
+    checkbox.name = "calendarBodyPart";
+
+    const text = document.createElement("span");
+    text.textContent = part;
+
+    label.append(checkbox, text);
+    calendarBodyPartOptionsEl.append(label);
   });
+}
+
+function getSelectedCalendarBodyParts() {
+  return Array.from(calendarBodyPartOptionsEl.querySelectorAll('input[type="checkbox"]:checked')).map(
+    (checkbox) => checkbox.value
+  );
+}
+
+function setSelectedCalendarBodyParts(parts) {
+  Array.from(calendarBodyPartOptionsEl.querySelectorAll('input[type="checkbox"]')).forEach((checkbox) => {
+    checkbox.checked = parts.includes(checkbox.value);
+  });
+}
+
+function updateWorkoutRatingLabel(value) {
+  calendarWorkoutRatingLabelEl.textContent = `${value} / 5`;
 }
 
 function openCalendarLogModal(dateKey) {
   appState.selectedCalendarDate = dateKey;
   calendarLogDateLabelEl.textContent = `Date: ${toHumanDate(dateKey)}`;
-  calendarBodyPartSelectEl.value = appState.calendarLogs[dateKey] || BODY_PARTS[0];
+
+  const entry = normalizeCalendarEntry(appState.calendarLogs[dateKey]);
+  setSelectedCalendarBodyParts(entry.bodyParts);
+  calendarWorkoutRatingEl.value = String(entry.rating);
+  updateWorkoutRatingLabel(entry.rating);
+
   openModal(calendarLogModalEl);
 }
 
@@ -326,7 +455,15 @@ function saveCalendarLog(event) {
     return;
   }
 
-  appState.calendarLogs[dateKey] = calendarBodyPartSelectEl.value;
+  const selectedBodyParts = getSelectedCalendarBodyParts();
+  if (!selectedBodyParts.length) {
+    return;
+  }
+
+  appState.calendarLogs[dateKey] = {
+    bodyParts: selectedBodyParts,
+    rating: Number(calendarWorkoutRatingEl.value),
+  };
   saveCalendar();
   renderCalendar();
   closeModal(calendarLogModalEl);
@@ -400,7 +537,7 @@ function setupCalendarNavigation() {
 
 function initializeApp() {
   loadStorage();
-  populateCalendarBodyPartOptions();
+  createCalendarBodyPartCheckboxes();
   renderBodyParts();
   renderExercises();
   renderCalendar();
@@ -411,6 +548,13 @@ function initializeApp() {
   editExerciseFormEl.addEventListener("submit", updateExercise);
   calendarLogFormEl.addEventListener("submit", saveCalendarLog);
   clearCalendarDayBtnEl.addEventListener("click", clearCalendarDay);
+  calendarWorkoutRatingEl.addEventListener("input", () => {
+    updateWorkoutRatingLabel(calendarWorkoutRatingEl.value);
+  });
+  updateWorkoutRatingLabel(calendarWorkoutRatingEl.value);
+
+  saveExercises();
+  saveCalendar();
 }
 
 initializeApp();
