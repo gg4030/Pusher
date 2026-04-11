@@ -152,7 +152,7 @@ p {
 .form-grid {
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 label {
@@ -281,6 +281,12 @@ select:focus {
   white-space: nowrap;
 }
 
+.calendar-day-rating {
+  margin-top: 0.25rem;
+  font-size: 0.76rem;
+  color: #2b6f9a;
+}
+
 .modal {
   position: fixed;
   inset: 0;
@@ -320,6 +326,36 @@ select:focus {
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 0.3rem;
+}
+
+.checkbox-grid {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 170px;
+  overflow: auto;
+  border: 1px solid #d0e9f8;
+  border-radius: 10px;
+  padding: 0.65rem;
+  background: #f8fcff;
+}
+
+.rating-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #23688f;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.checkbox-item input {
+  width: 16px;
+  height: 16px;
 }
 
 @media (max-width: 880px) {
