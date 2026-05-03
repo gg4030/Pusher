@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "trello": {
+      "command": "/ABSOLUTE/PATH/TO/trello-mcp-server/.venv/bin/python",
+      "args": [
+        "/ABSOLUTE/PATH/TO/trello-mcp-server/server.py"
+      ]
+    }
+  }
+}

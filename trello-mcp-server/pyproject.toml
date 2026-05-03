@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trello-mcp-server"
+version = "0.1.0"
+description = "Local Model Context Protocol (MCP) server that exposes Trello tools to Claude Desktop."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "AI in Business Student" }]
+keywords = ["mcp", "trello", "claude", "ai", "llm"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "mcp>=1.2.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.1",
+]
+
+[project.scripts]
+trello-mcp-server = "server:main"
+
+[tool.setuptools]
+py-modules = ["server"]
